@@ -3,21 +3,9 @@ const itemsPerPage = 10;
 let allData = [];
 let filteredData = [];
 
-async function fetchDataFromGitHub() {
-    const owner = 'kanereroma2343';
-    const repo = 'acdata';
-    const path = 'acdata.json';
-    
+async function fetchData() {
     try {
-        const response = await fetch(
-            `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
-            {
-                headers: {
-                    'Accept': 'application/vnd.github.v3.raw'
-                }
-            }
-        );
-        
+        const response = await fetch('./data.json'); // Updated path
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -27,7 +15,7 @@ async function fetchDataFromGitHub() {
         return allData;
 
     } catch (error) {
-        console.error('Error fetching from GitHub:', error);
+        console.error('Error fetching data:', error);
         return [];
     }
 }
@@ -158,7 +146,7 @@ function handleSearch(e) {
 
 // Initialize everything when the page loads
 async function initialize() {
-    await fetchDataFromGitHub();
+    await fetchData();
     populateProvinces();
     updateDisplay();
     
