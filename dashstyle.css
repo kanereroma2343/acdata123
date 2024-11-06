@@ -1,0 +1,137 @@
+/* General body and layout */
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    color: white; /* Ensures text is visible */
+    position: relative; /* Set position to relative for overlay */
+}
+
+/* Background image */
+body::before {
+    content: '';
+    position: fixed; /* Fixed to keep it in place */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url('../icons/office.jpg'); /* Change this to your image URL */
+    background-size: cover; /* Ensures the image covers the entire background */
+    background-position: center; /* Centers the image */
+    filter: blur(8px); /* Adjust the blur level here */
+    z-index: -1; /* Ensure it is behind the content */
+}
+
+/* Overlay for better text visibility */
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5); /* Dark overlay to improve text visibility */
+}
+
+/* Form container styling */
+.form-container {
+    background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent background for form */
+    border-radius: 15px; /* Rounded corners for the container */
+    padding: 20px; /* Padding for the container */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); /* Shadow for depth */
+    max-width: 1000px; /* Max width for better layout */
+    margin: 20px; /* Margin for spacing */
+}
+
+/* Header styling */
+header {
+    text-align: center;
+    margin-bottom: 20px;
+    position: relative; /* Relative positioning for layering */
+    z-index: 2; /* Ensure header is above the overlay */
+}
+
+/* User info section styling */
+.user-info {
+    margin-top: 10px;
+}
+
+.logout-btn {
+    background-color: blue;
+    color: white;
+    padding: 8px 15px;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+.logout-btn:hover {
+    background-color: darkblue;
+}
+
+/* Menu container styling */
+.menu-container {
+    display: flex; /* Change to flex for horizontal alignment */
+    justify-content: center; /* Center the menu options */
+    gap: 20px; /* Space between menu options */
+    margin-top: 50px;
+    padding: 0 20px; /* Add padding for smaller screens */
+    position: relative; /* Relative positioning for layering */
+    z-index: 2; /* Ensure menu is above the overlay */
+}
+
+/* Individual menu option styling */
+.menu-option {
+    background-color: transparent;
+    border: 3px solid white;
+    color: white;
+    text-align: center;
+    line-height: 150px; /* Adjusted to match box height */
+    font-size: 18px; /* Slightly smaller for better fit */
+    font-weight: bold;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+    width: 150px; /* Fixed width for consistency */
+    height: 150px; /* Fixed height for consistency */
+}
+
+/* Hover effect for menu options */
+.menu-option:hover {
+    transform: scale(1.05);
+    border-color: blue;
+    color: blue;
+}
+
+/* Footer styling */
+footer {
+    background-color: rgba(0, 0, 0, 0.8); /* Slightly darker for better contrast */
+    width: 100%;
+    padding: 20px;
+    text-align: center;
+    position: fixed; /* Use fixed to keep it at the bottom */
+    bottom: 0; /* Position it at the bottom */
+    left: 0; /* Align to the left */
+}
+
+/* Adjusting the body to prevent footer overlap */
+body {
+    padding-bottom: 60px; /* Added padding to prevent content overlap with the footer */
+}
+
+.footer-container p {
+    color: white;
+    margin: 5px 0;
+}
+
+.footer-container a {
+    color: lightblue;
+    text-decoration: none;
+}
+
+.footer-container a:hover {
+    text-decoration: underline;
+}
