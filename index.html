@@ -1,100 +1,158 @@
-<?php
-// Database connection
-$conn = mysqli_connect("localhost", "root", "", "excel_data");
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assessment Center Monitoring</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Add your CSS link here -->
+</head>
+<body>
 
-// Check connection
-if (!$conn) {
-    die("Connection failed: " . mysqli_connect_error());
-}
+    <!-- Header Section -->
+    <div class="header-container">
+        <div class="header-top">
+            <img src="../icons/tlogo.png" alt="Left Logo" class="logo">
+            <h1 class="header-title">Assessment Center Monitoring System</h1>
+            <img src="../icons/blogo.png" alt="Right Logo" class="logo">
+        </div>
+        <div class="button-container">
+            <button onclick="window.location.href='../dashboard.php'" class="action-button">Home</button>
+            <button onclick="window.location.href='uploadxls.php'" class="action-button">Upload Registry</button>
+            <button onclick="window.location.href='deletexls.php'" class="action-button">Delete Registry</button>
+            <button class="action-button">Export Data</button>
+            <button class="action-button">Settings</button>
+        </div>
+    </div>
 
-// Pagination settings
-$records_per_page = 75;
-$page = isset($_GET['page']) ? $_GET['page'] : 1;
-$offset = ($page - 1) * $records_per_page;
+    <!-- Search Section -->
+    <div class="search-container">
+        <form method="GET" action="" class="search-form" style="display: flex; gap: 10px; width: 100%;">
+            <select name="province" class="search-input" style="min-width: 150px; width: auto;">
+                <option value="">All Provinces</option>
+                <!-- Loop through provinces here dynamically with PHP -->
+                <?php
+                // Loop through provinces fetched from the database
+                while ($province = mysqli_fetch_assoc($provinces_result)) {
+                    $selected = ($selected_province == $province['province']) ? 'selected' : '';
+                    echo "<option value='" . htmlspecialchars($province['province']) . "' $selected>" 
+                        . htmlspecialchars($province['province']) . "</option>";
+                }
+                ?>
+            </select>
+            <input type="text" 
+                name="search" 
+                class="search-input" 
+                placeholder="Search by qualification, assessment center..." 
+                value="<?php echo htmlspecialchars($search); ?>">
+            <button type="submit" class="search-button">
+                <i class="fas fa-search"></i> Search
+            </button>
+        </form>
+    </div>
 
-// Modify the search and where clause section
-$search = isset($_GET['search']) ? mysqli_real_escape_string($conn, $_GET['search']) : '';
-$selected_province = isset($_GET['province']) ? mysqli_real_escape_string($conn, $_GET['province']) : '';
-$where_clause = "";
+    <!-- Table Section -->
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Province</th>
+                    <th>Assessment Center</th>
+                    <th>Center Manager</th>
+                    <th>Sector</th>
+                    <th>Qualification</th>
+                    <th>Accreditation Number</th>
+                    <th>Date of Accreditation</th>
+                    <th>Validity</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- Data will be inserted here via PHP -->
+                <?php
+                if (mysqli_num_rows($result) > 0) {
+                    while ($row = mysqli_fetch_assoc($result)) {
+                        // Convert dates from MySQL format to desired format
+                        $date_accredited = $row['date_accredited'] != '0000-00-00' 
+                            ? date('F d, Y', strtotime($row['date_accredited'])) 
+                            : 'Not Set';
+                        
+                        // Get current date and valid until date for comparison
+                        $current_date = new DateTime();
+                        $valid_until_date = $row['valid_until'] != '0000-00-00' 
+                            ? new DateTime($row['valid_until'])
+                            : null;
+                        
+                        // Format the valid_until date for display
+                        $valid_until = $row['valid_until'] != '0000-00-00' 
+                            ? date('F d, Y', strtotime($row['valid_until'])) 
+                            : 'Not Set';
+                        
+                        // Calculate the status and color
+                        $status_color = 'color: #28a745;'; // Default green for active
+                        $status_text = 'Active';
+                        
+                        if ($valid_until_date) {
+                            $diff = $current_date->diff($valid_until_date);
+                            $days_difference = $diff->days * ($diff->invert ? -1 : 1); // Negative if past date
+                            
+                            if ($days_difference < 0) {
+                                $status_color = 'color: #dc3545;'; // Red for expired
+                                $status_text = 'Expired';
+                            } elseif ($days_difference <= 90) {
+                                $status_color = 'color: #fd7e14;'; // Orange for expiring soon
+                                $status_text = 'Expiring Soon';
+                            }
+                        }
 
-if (!empty($search) || !empty($selected_province)) {
-    $conditions = array();
-    
-    if (!empty($search)) {
-        $conditions[] = "(assessment_center LIKE '%$search%' OR 
-            center_manager LIKE '%$search%' OR 
-            sector LIKE '%$search%' OR 
-            qualification_title LIKE '%$search%' OR 
-            accreditation_number LIKE '%$search%')";
-    }
-    
-    if (!empty($selected_province)) {
-        $conditions[] = "province = '$selected_province'";
-    }
-    
-    $where_clause = "WHERE " . implode(" AND ", $conditions);
-}
+                        echo "<tr>";
+                        echo "<td>" . htmlspecialchars($row['province']) . "</td>";
+                        echo "<td>" . htmlspecialchars($row['assessment_center']) . "</td>";
+                        echo "<td>" . htmlspecialchars($row['center_manager']) . "</td>";
+                        echo "<td>" . htmlspecialchars($row['sector']) . "</td>";
+                        echo "<td>" . htmlspecialchars($row['qualification_title']) . "</td>";
+                        echo "<td>" . htmlspecialchars($row['accreditation_number']) . "</td>";
+                        echo "<td>" . $date_accredited . "</td>";
+                        echo "<td style='" . $status_color . "'>" . $valid_until . " (" . $status_text . ")</td>";
+                        echo "</tr>";
+                    }
+                } else {
+                    echo "<tr><td colspan='8' class='text-center'>No records found</td></tr>";
+                }
+                ?>
+            </tbody>
+        </table>
+    </div>
 
-// Modify the queries to include search
-$query = "SELECT province, assessment_center, center_manager, sector, qualification_title, 
-          accreditation_number, date_accredited, valid_until 
-          FROM ac_data 
-          $where_clause 
-          LIMIT $offset, $records_per_page";
-$result = mysqli_query($conn, $query);
+    <!-- Pagination Section -->
+    <?php
+    // Pagination code here
+    echo '<div class="pagination-container">';
+    if ($total_pages > 1) {
+        echo '<div class="pagination">';
+        if ($page > 1) {
+            echo '<a href="?page='.($page-1).'&search='.urlencode($search).'&province='.urlencode($selected_province).'" class="page-link">&laquo; Previous</a>';
+        }
 
-// Get the results as an array
-$data = [];
-if (mysqli_num_rows($result) > 0) {
-    while ($row = mysqli_fetch_assoc($result)) {
-        // Process dates
-        $date_accredited = $row['date_accredited'] != '0000-00-00' 
-            ? date('F d, Y', strtotime($row['date_accredited'])) 
-            : 'Not Set';
-        
-        $valid_until = $row['valid_until'] != '0000-00-00' 
-            ? date('F d, Y', strtotime($row['valid_until'])) 
-            : 'Not Set';
-        
-        // Calculate the status and color
-        $status_color = 'green'; // Default green for active
-        $status_text = 'Active';
-        
-        // Determine if expired or expiring soon
-        if ($row['valid_until'] != '0000-00-00') {
-            $current_date = new DateTime();
-            $valid_until_date = new DateTime($row['valid_until']);
-            $diff = $current_date->diff($valid_until_date);
-            $days_difference = $diff->days * ($diff->invert ? -1 : 1); // Negative if expired
-            
-            if ($days_difference < 0) {
-                $status_color = 'red'; // Expired
-                $status_text = 'Expired';
-            } elseif ($days_difference <= 90) {
-                $status_color = 'orange'; // Expiring soon
-                $status_text = 'Expiring Soon';
+        for ($i = 1; $i <= $total_pages; $i++) {
+            if ($i == $page) {
+                echo '<span class="page-link active">'.$i.'</span>';
+            } else {
+                echo '<a href="?page='.$i.'&search='.urlencode($search).'&province='.urlencode($selected_province).'" class="page-link">'.$i.'</a>';
             }
         }
 
-        // Add the row data to the array
-        $data[] = [
-            'province' => $row['province'],
-            'assessment_center' => $row['assessment_center'],
-            'center_manager' => $row['center_manager'],
-            'sector' => $row['sector'],
-            'qualification_title' => $row['qualification_title'],
-            'accreditation_number' => $row['accreditation_number'],
-            'date_accredited' => $date_accredited,
-            'valid_until' => $valid_until,
-            'status_color' => $status_color,
-            'status_text' => $status_text
-        ];
+        if ($page < $total_pages) {
+            echo '<a href="?page='.($page+1).'&search='.urlencode($search).'&province='.urlencode($selected_province).'" class="page-link">Next &raquo;</a>';
+        }
+        echo '</div>';
     }
-}
+    echo '</div>';
+    ?>
 
-// Return the data as JSON
-echo json_encode($data);
+    <!-- Footer Section (Optional) -->
+    <footer>
+        <p>&copy; 2024 Assessment Center Monitoring. All rights reserved.</p>
+    </footer>
 
-// Close the connection
-mysqli_close($conn);
-?>
+</body>
+</html>
