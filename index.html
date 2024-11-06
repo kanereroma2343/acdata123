@@ -7,157 +7,39 @@ if (!$conn) {
     die("Connection failed: " . mysqli_connect_error());
 }
 
-// CSS Styles
-echo '<style>
-    body {
-        background: #f0f2f5;
-        margin: 0;
-        padding: 0;
-        min-height: 100vh;
-        color: #333;
-    }
-    
-    .table-responsive {
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-        margin: 2rem auto;
-        border-radius: 12px;
-        overflow: hidden;
-        max-width: 95%;
-        background: #ffffff;
-        border: 1px solid rgba(0, 0, 0, 0.1);
-    }
-
-    .table {
-        width: 100%;
-        border-collapse: collapse;
-        background: #ffffff;
-        font-size: 14px;
-        transition: all 0.3s ease;
-        color: #333333;
-    }
-
-    .thead-dark {
-        background: linear-gradient(45deg, #1a1a2e, #16213e, #0f3460);
-    }
-
-    .thead-dark th {
-        color: white;
-        padding: 18px 15px;
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.9rem;
-        letter-spacing: 0.8px;
-        text-align: left;
-    }
-
-    .table tbody tr {
-        transition: all 0.3s ease;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-    }
-
-    .table tbody tr:hover {
-        background-color: #f5f5f5;
-        transform: scale(1.005);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .table td {
-        padding: 15px;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-        color: #333333;
-        vertical-align: middle;
-    }
-
-    .table-striped tbody tr:nth-of-type(odd) {
-        background-color: #f8f9fa;
-    }
-
-    .pagination-container {
-        text-align: center;
-        margin: 30px 0;
-    }
-
-    .pagination {
-        display: inline-flex;
-        gap: 8px;
-        align-items: center;
-        justify-content: center;
-        flex-wrap: wrap;
-    }
-
-    .page-link {
-        padding: 10px 15px;
-        border: 2px solid #1a1a2e;
-        color: #1a1a2e;
-        text-decoration: none;
-        border-radius: 6px;
-        transition: all 0.3s ease;
-        font-weight: 500;
-        background: #ffffff;
-    }
-
-    .page-link:hover {
-        background-color: #1a1a2e;
-        color: #ffffff;
-        transform: translateY(-2px);
-        border-color: rgba(255, 255, 255, 0.4);
-    }
-
-    .page-link.active {
-        background: linear-gradient(45deg, #1a1a2e, #16213e);
-        color: #ffffff;
-        border-color: rgba(255, 255, 255, 0.4);
-    }
-
-    @media screen and (max-width: 768px) {
-        .table {
-            font-size: 12px;
-        }
-
-        .thead-dark th {
-            padding: 10px;
-            font-size: 0.8rem;
-        }
-
-        .table td {
-            padding: 8px 10px;
-        }
-    }
-</style>';
-
 // Pagination settings
 $records_per_page = 75;
 $page = isset($_GET['page']) ? $_GET['page'] : 1;
 $offset = ($page - 1) * $records_per_page;
 
-// Query to get unique provinces
+// Add this query to get unique provinces
 $provinces_query = "SELECT DISTINCT province FROM ac_data ORDER BY province";
 $provinces_result = mysqli_query($conn, $provinces_query);
 
-// Search and filter handling
+// Modify the search and where clause section
 $search = isset($_GET['search']) ? mysqli_real_escape_string($conn, $_GET['search']) : '';
 $selected_province = isset($_GET['province']) ? mysqli_real_escape_string($conn, $_GET['province']) : '';
 $where_clause = "";
 
 if (!empty($search) || !empty($selected_province)) {
     $conditions = array();
-
+    
     if (!empty($search)) {
         $conditions[] = "(assessment_center LIKE '%$search%' OR 
-                          center_manager LIKE '%$search%' OR 
-                          sector LIKE '%$search%' OR 
-                          qualification_title LIKE '%$search%' OR 
-                          accreditation_number LIKE '%$search%')";
+            center_manager LIKE '%$search%' OR 
+            sector LIKE '%$search%' OR 
+            qualification_title LIKE '%$search%' OR 
+            accreditation_number LIKE '%$search%')";
     }
-
+    
     if (!empty($selected_province)) {
         $conditions[] = "province = '$selected_province'";
     }
-
+    
     $where_clause = "WHERE " . implode(" AND ", $conditions);
 }
 
-// Query for paginated records with search
+// Modify the queries to include search
 $query = "SELECT province, assessment_center, center_manager, sector, qualification_title, 
           accreditation_number, date_accredited, valid_until 
           FROM ac_data 
@@ -165,42 +47,82 @@ $query = "SELECT province, assessment_center, center_manager, sector, qualificat
           LIMIT $offset, $records_per_page";
 $result = mysqli_query($conn, $query);
 
-// Get the total number of records for pagination
+// Update total records query to include search
 $total_records_query = "SELECT COUNT(*) AS total FROM ac_data $where_clause";
-$total_result = mysqli_query($conn, $total_records_query);
-$total_records = mysqli_fetch_assoc($total_result)['total'];
+$total_records_result = mysqli_query($conn, $total_records_query);
+$total_records = mysqli_fetch_assoc($total_records_result)['total'];
 $total_pages = ceil($total_records / $records_per_page);
-
-// Render the results in the table
-echo '<div class="table-responsive">';
-echo '<table class="table table-striped">';
-echo '<thead class="thead-dark"><tr>';
-echo '<th>Province</th><th>Assessment Center</th><th>Center Manager</th><th>Sector</th><th>Qualification Title</th><th>Accreditation Number</th><th>Date Accredited</th><th>Valid Until</th>';
-echo '</tr></thead><tbody>';
-
-while ($row = mysqli_fetch_assoc($result)) {
-    echo '<tr>';
-    echo '<td>' . htmlspecialchars($row['province']) . '</td>';
-    echo '<td>' . htmlspecialchars($row['assessment_center']) . '</td>';
-    echo '<td>' . htmlspecialchars($row['center_manager']) . '</td>';
-    echo '<td>' . htmlspecialchars($row['sector']) . '</td>';
-    echo '<td>' . htmlspecialchars($row['qualification_title']) . '</td>';
-    echo '<td>' . htmlspecialchars($row['accreditation_number']) . '</td>';
-    echo '<td>' . htmlspecialchars($row['date_accredited']) . '</td>';
-    echo '<td>' . htmlspecialchars($row['valid_until']) . '</td>';
-    echo '</tr>';
-}
-
-echo '</tbody></table></div>';
-
-// Pagination controls
-echo '<div class="pagination-container">';
-echo '<div class="pagination">';
-for ($i = 1; $i <= $total_pages; $i++) {
-    echo '<a href="?page=' . $i . '&search=' . urlencode($search) . '&province=' . urlencode($selected_province) . '" class="page-link ' . ($i == $page ? 'active' : '') . '">' . $i . '</a>';
-}
-echo '</div>';
-echo '</div>';
-
-mysqli_close($conn);
 ?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Table</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <div class="header-container">
+        <div class="header-top">
+            <h1 class="header-title">Assessment Center Data</h1>
+        </div>
+        <div class="button-container">
+            <a href="index.php" class="action-button">Add New Record</a>
+            <a href="export.php" class="action-button">Export Data</a>
+        </div>
+    </div>
+
+    <div class="search-container">
+        <input type="text" class="search-input" placeholder="Search..." value="<?php echo $search; ?>" />
+        <select class="search-input" name="province" id="province" value="<?php echo $selected_province; ?>">
+            <option value="">Select Province</option>
+            <?php while ($row = mysqli_fetch_assoc($provinces_result)) { ?>
+                <option value="<?php echo $row['province']; ?>" <?php echo $selected_province == $row['province'] ? 'selected' : ''; ?>><?php echo $row['province']; ?></option>
+            <?php } ?>
+        </select>
+        <button class="search-button" type="submit">Search</button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Province</th>
+                    <th>Assessment Center</th>
+                    <th>Center Manager</th>
+                    <th>Sector</th>
+                    <th>Qualification Title</th>
+                    <th>Accreditation Number</th>
+                    <th>Date Accredited</th>
+                    <th>Valid Until</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php while ($row = mysqli_fetch_assoc($result)) { ?>
+                    <tr>
+                        <td><?php echo $row['province']; ?></td>
+                        <td><?php echo $row['assessment_center']; ?></td>
+                        <td><?php echo $row['center_manager']; ?></td>
+                        <td><?php echo $row['sector']; ?></td>
+                        <td><?php echo $row['qualification_title']; ?></td>
+                        <td><?php echo $row['accreditation_number']; ?></td>
+                        <td><?php echo $row['date_accredited']; ?></td>
+                        <td><?php echo $row['valid_until']; ?></td>
+                    </tr>
+                <?php } ?>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pagination-container">
+        <div class="pagination">
+            <?php for ($i = 1; $i <= $total_pages; $i++) { ?>
+                <a href="?page=<?php echo $i; ?>" class="page-link"><?php echo $i; ?></a>
+            <?php } ?>
+        </div>
+    </div>
+
+</body>
+</html>
