@@ -1,39 +1,100 @@
-// fetchData.js
-document.addEventListener("DOMContentLoaded", function () {
-  const url = "fetchData.php";  // Point to the PHP script you created
+<?php
+// Database connection
+$conn = mysqli_connect("localhost", "root", "", "excel_data");
 
-  // Fetch data from the PHP file
-  fetch(url)
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      return response.json();
-    })
-    .then(data => {
-      // Populate the table with data
-      const tableBody = document.getElementById('tableBody');
-      tableBody.innerHTML = ''; // Clear existing table rows
+// Check connection
+if (!$conn) {
+    die("Connection failed: " . mysqli_connect_error());
+}
 
-      data.forEach(row => {
-        const tr = document.createElement('tr');
+// Pagination settings
+$records_per_page = 75;
+$page = isset($_GET['page']) ? $_GET['page'] : 1;
+$offset = ($page - 1) * $records_per_page;
 
-        // Create table cells for each row
-        tr.innerHTML = `
-          <td>${row.province}</td>
-          <td>${row.assessment_center}</td>
-          <td>${row.center_manager}</td>
-          <td>${row.sector}</td>
-          <td>${row.qualification_title}</td>
-          <td>${row.accreditation_number}</td>
-          <td>${row.date_accredited}</td>
-          <td style="color: ${row.status_color};">${row.valid_until} (${row.status_text})</td>
-        `;
+// Modify the search and where clause section
+$search = isset($_GET['search']) ? mysqli_real_escape_string($conn, $_GET['search']) : '';
+$selected_province = isset($_GET['province']) ? mysqli_real_escape_string($conn, $_GET['province']) : '';
+$where_clause = "";
 
-        tableBody.appendChild(tr);
-      });
-    })
-    .catch(error => {
-      console.error('There was an error with the fetch operation:', error);
-    });
-});
+if (!empty($search) || !empty($selected_province)) {
+    $conditions = array();
+    
+    if (!empty($search)) {
+        $conditions[] = "(assessment_center LIKE '%$search%' OR 
+            center_manager LIKE '%$search%' OR 
+            sector LIKE '%$search%' OR 
+            qualification_title LIKE '%$search%' OR 
+            accreditation_number LIKE '%$search%')";
+    }
+    
+    if (!empty($selected_province)) {
+        $conditions[] = "province = '$selected_province'";
+    }
+    
+    $where_clause = "WHERE " . implode(" AND ", $conditions);
+}
+
+// Modify the queries to include search
+$query = "SELECT province, assessment_center, center_manager, sector, qualification_title, 
+          accreditation_number, date_accredited, valid_until 
+          FROM ac_data 
+          $where_clause 
+          LIMIT $offset, $records_per_page";
+$result = mysqli_query($conn, $query);
+
+// Get the results as an array
+$data = [];
+if (mysqli_num_rows($result) > 0) {
+    while ($row = mysqli_fetch_assoc($result)) {
+        // Process dates
+        $date_accredited = $row['date_accredited'] != '0000-00-00' 
+            ? date('F d, Y', strtotime($row['date_accredited'])) 
+            : 'Not Set';
+        
+        $valid_until = $row['valid_until'] != '0000-00-00' 
+            ? date('F d, Y', strtotime($row['valid_until'])) 
+            : 'Not Set';
+        
+        // Calculate the status and color
+        $status_color = 'green'; // Default green for active
+        $status_text = 'Active';
+        
+        // Determine if expired or expiring soon
+        if ($row['valid_until'] != '0000-00-00') {
+            $current_date = new DateTime();
+            $valid_until_date = new DateTime($row['valid_until']);
+            $diff = $current_date->diff($valid_until_date);
+            $days_difference = $diff->days * ($diff->invert ? -1 : 1); // Negative if expired
+            
+            if ($days_difference < 0) {
+                $status_color = 'red'; // Expired
+                $status_text = 'Expired';
+            } elseif ($days_difference <= 90) {
+                $status_color = 'orange'; // Expiring soon
+                $status_text = 'Expiring Soon';
+            }
+        }
+
+        // Add the row data to the array
+        $data[] = [
+            'province' => $row['province'],
+            'assessment_center' => $row['assessment_center'],
+            'center_manager' => $row['center_manager'],
+            'sector' => $row['sector'],
+            'qualification_title' => $row['qualification_title'],
+            'accreditation_number' => $row['accreditation_number'],
+            'date_accredited' => $date_accredited,
+            'valid_until' => $valid_until,
+            'status_color' => $status_color,
+            'status_text' => $status_text
+        ];
+    }
+}
+
+// Return the data as JSON
+echo json_encode($data);
+
+// Close the connection
+mysqli_close($conn);
+?>
