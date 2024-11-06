@@ -19,7 +19,7 @@ body::before {
     left: 0;
     right: 0;
     bottom: 0;
-    background-image: url('../icons/office.jpg'); /* Change this to your image URL */
+    background-image: url('/office.jpg'); /* Change this to your image URL */
     background-size: cover; /* Ensures the image covers the entire background */
     background-position: center; /* Centers the image */
     filter: blur(8px); /* Adjust the blur level here */
