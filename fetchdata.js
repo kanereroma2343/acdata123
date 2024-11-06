@@ -5,7 +5,7 @@ let filteredData = [];
 
 async function fetchData() {
     try {
-        const response = await fetch('./data.json'); // Updated path
+        const response = await fetch('data.json'); // Updated path
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
